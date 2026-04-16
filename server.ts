@@ -4,17 +4,27 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
-import puppeteer from "puppeteer";
+import puppeteerCore from "puppeteer-core";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import { v4 as uuidv4 } from "uuid";
 import ModelClient from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 import fs from "fs";
 
+// Load chromium only when in Vercel environment
+let chromium: any = null;
+if (process.env.VERCEL) {
+  try {
+    chromium = await import("@sparticuz/chromium").then(m => m.default);
+  } catch (e) {
+    console.error("Failed to load @sparticuz/chromium", e);
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function startServer() {
+export async function startServer() {
   const app = express();
   const PORT = 3000;
 
@@ -210,8 +220,20 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
     try {
       console.log("Starting PDF generation...");
       
-      const cssPath = path.join(process.cwd(), 'src', 'index.css');
-      const tailwindCSS = fs.readFileSync(cssPath, 'utf-8');
+      // In Vercel, paths might be different. Let's try multiple options.
+      let cssPath = path.join(process.cwd(), 'src', 'index.css');
+      if (!fs.existsSync(cssPath)) {
+        cssPath = path.join(process.cwd(), 'index.css'); // fallback
+      }
+      
+      let tailwindCSS = "";
+      try {
+        if (fs.existsSync(cssPath)) {
+          tailwindCSS = fs.readFileSync(cssPath, 'utf-8');
+        }
+      } catch (e) {
+        console.warn("Could not read CSS file:", e);
+      }
       
       const fontStyles = `
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,16 +259,27 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
         `${fontStyles}<style>${tailwindCSS}</style></head>`
       );
       
-      browser = await puppeteer.launch({
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--font-render-hinting=none',
-          '--disable-web-security'
-        ],
-        headless: true
-      });
+      if (process.env.VERCEL && chromium) {
+        browser = await puppeteerCore.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+          ignoreHTTPSErrors: true,
+        });
+      } else {
+        const puppeteer = await import("puppeteer").then(m => m.default);
+        browser = await puppeteer.launch({
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--font-render-hinting=none',
+            '--disable-web-security'
+          ],
+          headless: true
+        });
+      }
       
       const page = await browser.newPage();
       
@@ -382,9 +415,15 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  return app;
 }
 
-startServer();
+// Only listen if this file is run directly
+if (process.env.NODE_ENV !== "test" && !process.env.VERCEL) {
+  startServer().then(app => {
+    const PORT = 3000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  });
+}
