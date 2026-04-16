@@ -34,10 +34,6 @@ export async function startServer() {
   // In-memory storage for photos (base64)
   const photoStorage = new Map<string, string>();
 
-  // GitHub Models Setup
-  const token = process.env.GITHUB_TOKEN || "";
-  const client = ModelClient("https://models.inference.ai.azure.com", new AzureKeyCredential(token));
-  const modelName = "gpt-4o-mini";
 
   const SYSTEM_PROMPT = `És o SALO AI, assistente especializado em criar CVs profissionais para o mercado angolano e lusófono.
 
