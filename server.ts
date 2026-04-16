@@ -80,11 +80,14 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
 
   // AI Helper: Dynamic Client & Fallback Model
   const callAI = async (messages: any[], preferredModel = "gpt-4o-mini") => {
-    // Re-read .env to catch changes without a full process restart
-    const { config } = await import("dotenv");
-    config(); 
-    
     const currentToken = process.env.GITHUB_TOKEN || "";
+    
+    if (!currentToken) {
+      console.error("Vercel Error: GITHUB_TOKEN is not defined in environment variables!");
+    } else {
+      console.log("Vercel: GITHUB_TOKEN is present (length: " + currentToken.length + ")");
+    }
+
     const currentClient = ModelClient("https://models.inference.ai.azure.com", new AzureKeyCredential(currentToken));
     
     const fallbackModels = ["gpt-4o", "phi-3-mini-128k-instruct"];
@@ -94,7 +97,7 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
     let lastError = null;
     for (const model of uniqueModels) {
       try {
-        console.log(`Trying AI model: ${model}`);
+        console.log(`Vercel: Requesting AI model ${model}...`);
         const response = await currentClient.path("/chat/completions").post({
           body: {
             messages,
@@ -105,13 +108,14 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
         });
 
         if (response.status === "200") {
+          console.log(`Vercel: Success from model ${model}`);
           return (response.body as any).choices[0].message.content;
         }
         
-        console.warn(`Model ${model} failed with status: ${response.status}`);
+        console.warn(`Vercel: Model ${model} failed with status: ${response.status}`);
         lastError = new Error(`AI error (${model}): ${response.status}`);
       } catch (err) {
-        console.error(`Error calling ${model}:`, err);
+        console.error(`Vercel: Error calling ${model}:`, err);
         lastError = err;
       }
     }

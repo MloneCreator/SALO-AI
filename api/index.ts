@@ -1,6 +1,13 @@
-import { startServer } from "../server.js";
+import { startServer } from "../server";
+
+let cachedApp: any;
 
 export default async function handler(req: any, res: any) {
-  const app = await startServer();
-  return app(req, res);
+  if (!cachedApp) {
+    console.log("Vercel: Initializing new Express instance...");
+    cachedApp = await startServer();
+  }
+  
+  console.log(`Vercel API: ${req.method} ${req.url}`);
+  return cachedApp(req, res);
 }
