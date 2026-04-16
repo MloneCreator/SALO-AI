@@ -306,7 +306,7 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
       });
 
       console.log("High-fidelity PDF generated, base64 encoding it...");
-      const base64Pdf = pdf.toString("base64");
+      const base64Pdf = Buffer.from(pdf).toString("base64");
       res.json({ base64: base64Pdf, filename: "cv.pdf" });
     } catch (error) {
       console.error("PDF generation error:", error);
