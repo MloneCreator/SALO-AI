@@ -264,7 +264,6 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
           defaultViewport: chromium.defaultViewport,
           executablePath: await chromium.executablePath(),
           headless: chromium.headless,
-          ignoreHTTPSErrors: true,
         });
       } else {
         const puppeteer = await import("puppeteer").then(m => m.default);

@@ -19,15 +19,32 @@ export default function App() {
   const handleChatComplete = async (chatHistory: string) => {
     setIsProcessing(true);
     try {
-      const data = await extractCVData(chatHistory);
-      const letter = await generateCoverLetter(data);
+      const rawData = await extractCVData(chatHistory);
+      const letter = await generateCoverLetter(rawData);
       
-      // Merge photo if uploaded
-      if (photo) {
-        data.personalInfo.photoUrl = photo;
-      }
+      const sanitizedData: CVData = {
+        personalInfo: {
+          fullName: rawData.personalInfo?.fullName || 'Sem Nome',
+          jobTitle: rawData.personalInfo?.jobTitle || '',
+          email: rawData.personalInfo?.email || '',
+          phone: rawData.personalInfo?.phone || '',
+          address: rawData.personalInfo?.address || '',
+          photoUrl: rawData.personalInfo?.photoUrl || photo || '',
+        },
+        summary: rawData.summary || '',
+        education: Array.isArray(rawData.education) ? rawData.education : [],
+        experience: Array.isArray(rawData.experience) ? rawData.experience : [],
+        skills: Array.isArray(rawData.skills) ? rawData.skills : [],
+        languages: Array.isArray(rawData.languages) ? rawData.languages : [],
+        certifications: Array.isArray(rawData.certifications) ? rawData.certifications : [],
+        coverLetterInfo: {
+          targetCompany: rawData.coverLetterInfo?.targetCompany || '',
+          targetRole: rawData.coverLetterInfo?.targetRole || '',
+          motivation: rawData.coverLetterInfo?.motivation || ''
+        }
+      };
       
-      setCvData(data);
+      setCvData(sanitizedData);
       setCoverLetter(letter);
       setStep('template-selection');
     } catch (error) {
