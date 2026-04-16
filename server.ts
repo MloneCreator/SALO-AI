@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
@@ -405,7 +404,8 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
   });
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
