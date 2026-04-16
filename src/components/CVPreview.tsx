@@ -56,8 +56,13 @@ export const CVPreview: React.FC<CVPreviewProps> = ({ data, templateId, coverLet
       const errorText = await response.text();
       throw new Error(errorText);
     }
-
-    return await response.blob();
+    const json = await response.json();
+    const binaryStr = window.atob(json.base64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: 'application/pdf' });
   };
 
   const handleDownloadPDF = async () => {
@@ -133,8 +138,14 @@ export const CVPreview: React.FC<CVPreviewProps> = ({ data, templateId, coverLet
 
       if (response.ok) {
         const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('wordprocessingml')) {
-          const blob = await response.blob();
+        if (contentType && contentType.includes('application/json')) {
+          const json = await response.json();
+          const binaryStr = window.atob(json.base64);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+          }
+          const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -145,7 +156,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({ data, templateId, coverLet
           window.URL.revokeObjectURL(url);
         } else {
           const text = await response.text();
-          console.error("Server returned non-DOCX content:", text);
+          console.error("Server returned non-JSON content:", text);
           alert("Erro ao gerar DOCX: O servidor não retornou um ficheiro válido.");
         }
       } else {

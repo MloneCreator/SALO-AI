@@ -305,12 +305,9 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
         scale: 1,
       });
 
-      console.log("High-fidelity PDF generated, size:", pdf.length);
-      console.log("PDF generated successfully, size:", pdf.length);
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=cv.pdf');
-      res.send(pdf);
+      console.log("High-fidelity PDF generated, base64 encoding it...");
+      const base64Pdf = pdf.toString("base64");
+      res.json({ base64: base64Pdf, filename: "cv.pdf" });
     } catch (error) {
       console.error("PDF generation error:", error);
       res.status(500).send(`Erro ao gerar PDF: ${error instanceof Error ? error.message : String(error)}`);
@@ -389,9 +386,8 @@ Tom: profissional, acolhedor, encorajador. Responde sempre em português de Ango
       });
 
       const buffer = await Packer.toBuffer(doc);
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-      res.setHeader("Content-Disposition", `attachment; filename=cv.docx`);
-      res.send(buffer);
+      const base64Docx = buffer.toString('base64');
+      res.json({ base64: base64Docx, filename: "cv.docx" });
     } catch (error) {
       console.error("DOCX generation error:", error);
       res.status(500).send(`Erro ao gerar DOCX: ${error instanceof Error ? error.message : String(error)}`);
